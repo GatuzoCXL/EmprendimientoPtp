@@ -17,6 +17,24 @@ data class ApiResponse<T>(
     val errors: List<String>?
 )
 
+// Validation Error Response (from .NET Problem Details)
+data class ValidationErrorResponse(
+    @SerializedName("type")
+    val type: String?,
+    
+    @SerializedName("title")
+    val title: String?,
+    
+    @SerializedName("status")
+    val status: Int?,
+    
+    @SerializedName("errors")
+    val errors: Map<String, List<String>>?,
+    
+    @SerializedName("traceId")
+    val traceId: String?
+)
+
 // Auth DTOs
 data class LoginRequest(
     @SerializedName("email")
@@ -34,7 +52,10 @@ data class RegisterRequest(
     val email: String,
     
     @SerializedName("password")
-    val password: String
+    val password: String,
+    
+    @SerializedName("rol")
+    val rol: Int = 0 // 0 = Cliente (default)
 )
 
 data class LoginResponse(
@@ -57,6 +78,9 @@ data class UserDto(
     
     @SerializedName("email")
     val email: String,
+    
+    @SerializedName("rol")
+    val rol: Int = 0,
     
     @SerializedName("createdAt")
     val createdAt: String
@@ -99,11 +123,38 @@ data class OrganizadorDto(
     @SerializedName("id")
     val id: String,
     
-    @SerializedName("nombre")
-    val nombre: String,
+    @SerializedName("nombreEmpresa")
+    val nombreEmpresa: String,
     
-    @SerializedName("email")
-    val email: String
+    @SerializedName("descripcion")
+    val descripcion: String? = null,
+    
+    @SerializedName("telefono")
+    val telefono: String,
+    
+    @SerializedName("direccion")
+    val direccion: String? = null,
+    
+    @SerializedName("precioPorEvento")
+    val precioPorEvento: Double,
+    
+    @SerializedName("añosExperiencia")
+    val añosExperiencia: Int,
+    
+    @SerializedName("especialidad")
+    val especialidad: String? = null,
+    
+    @SerializedName("verificado")
+    val verificado: Boolean,
+    
+    @SerializedName("rating")
+    val rating: Double,
+    
+    @SerializedName("cantidadReseñas")
+    val cantidadReseñas: Int,
+    
+    @SerializedName("usuarioId")
+    val usuarioId: String
 )
 
 data class CreateEventRequest(
@@ -127,4 +178,82 @@ data class CreateEventRequest(
     
     @SerializedName("organizadorId")
     val organizadorId: String
+)
+
+// Event Invitation DTOs
+data class EventoInvitadoDto(
+    @SerializedName("id")
+    val id: String,
+    
+    @SerializedName("eventoId")
+    val eventoId: String,
+    
+    @SerializedName("usuarioId")
+    val usuarioId: String,
+    
+    @SerializedName("estado")
+    val estado: Int,
+    
+    @SerializedName("esAutopostulacion")
+    val esAutopostulacion: Boolean,
+    
+    @SerializedName("fechaInvitacion")
+    val fechaInvitacion: String,
+    
+    @SerializedName("fechaRespuesta")
+    val fechaRespuesta: String?,
+    
+    @SerializedName("mensaje")
+    val mensaje: String?,
+    
+    @SerializedName("evento")
+    val evento: EventoDto?,
+    
+    @SerializedName("usuario")
+    val usuario: UserDto?
+)
+
+data class InvitarUsuarioRequest(
+    @SerializedName("eventoId")
+    val eventoId: String,
+    
+    @SerializedName("usuarioId")
+    val usuarioId: String,
+    
+    @SerializedName("mensaje")
+    val mensaje: String?
+)
+
+data class AutopostularseRequest(
+    @SerializedName("eventoId")
+    val eventoId: String,
+    
+    @SerializedName("mensaje")
+    val mensaje: String?
+)
+
+data class CreateOrganizadorRequest(
+    @SerializedName("nombreEmpresa")
+    val nombreEmpresa: String,
+    
+    @SerializedName("descripcion")
+    val descripcion: String?,
+    
+    @SerializedName("telefono")
+    val telefono: String,
+    
+    @SerializedName("direccion")
+    val direccion: String?,
+    
+    @SerializedName("precioPorEvento")
+    val precioPorEvento: Double,
+    
+    @SerializedName("añosExperiencia")
+    val añosExperiencia: Int,
+    
+    @SerializedName("especialidad")
+    val especialidad: String?,
+    
+    @SerializedName("usuarioId")
+    val usuarioId: String
 )

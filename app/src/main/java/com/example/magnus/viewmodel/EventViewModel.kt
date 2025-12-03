@@ -32,6 +32,7 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
         name: String,
         description: String,
         date: Long,
+        endDate: Long,
         location: String,
         maxGuests: Int,
         creatorId: String,
@@ -46,6 +47,7 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
                     name = name,
                     description = description,
                     date = date,
+                    endDate = endDate,
                     location = location,
                     maxGuests = maxGuests,
                     creatorId = creatorId,
@@ -129,88 +131,29 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    // TODO: Backend no tiene endpoints de Guests aún
+    // Implementar cuando el backend tenga estos endpoints
     fun addGuest(
         eventId: String,
         name: String,
         email: String,
         phone: String = ""
     ) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            try {
-                val guest = Guest(
-                    id = "guest_${System.currentTimeMillis()}",
-                    eventId = eventId,
-                    name = name,
-                    email = email,
-                    phone = phone,
-                    status = GuestStatus.PENDING
-                )
-                
-                val result = repository.addGuest(guest)
-                if (result.isSuccess) {
-                    loadGuestsByEvent(eventId)
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Error al añadir invitado"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Error al añadir invitado"
-                )
-            }
-        }
+        _uiState.value = _uiState.value.copy(
+            error = "Funcionalidad de invitados próximamente"
+        )
     }
     
     fun loadGuestsByEvent(eventId: String) {
-        viewModelScope.launch {
-            try {
-                val result = repository.getGuestsByEvent(eventId)
-                if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        guests = result.getOrNull() ?: emptyList()
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Error al cargar invitados"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Error al cargar invitados"
-                )
-            }
-        }
+        _uiState.value = _uiState.value.copy(
+            guests = emptyList()
+        )
     }
     
     fun updateGuestStatus(guestId: String, status: GuestStatus) {
-        viewModelScope.launch {
-            try {
-                val result = repository.updateGuestStatus(guestId, status)
-                if (result.isSuccess) {
-                    // Recargar la lista de invitados para reflejar el cambio
-                    val currentGuest = _uiState.value.guests.find { it.id == guestId }
-                    currentGuest?.let { guest ->
-                        loadGuestsByEvent(guest.eventId)
-                    }
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        error = result.exceptionOrNull()?.message ?: "Error al actualizar estado"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Error al actualizar estado"
-                )
-            }
-        }
+        _uiState.value = _uiState.value.copy(
+            error = "Funcionalidad de invitados próximamente"
+        )
     }
     
     fun clearError() {
@@ -221,10 +164,58 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(isEventCreated = false)
     }
     
+    fun deleteEvent(eventId: String, eventDate: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            // Validar que el evento pueda eliminarse
+            val now = System.currentTimeMillis()
+            val isUpcoming = eventDate > now
+            
+            if (!isUpcoming) {
+                _uiState.value = _uiState.value.copy(
+                    error = "No puedes eliminar un evento que ya comenzó o finalizó"
+                )
+                return@launch
+            }
+            
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
+            try {
+                val result = repository.deleteEvent(eventId)
+                
+                if (result.isSuccess) {
+                    // Actualizar lista de eventos (remover el eliminado)
+                    val updatedEvents = _uiState.value.events.filter { it.id != eventId }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        events = updatedEvents
+                    )
+                    onSuccess()
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "Error al eliminar evento"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            }
+        }
+    }
+    
     // Función para obtener estadísticas
     fun getEventStats(creatorId: String, callback: (EventStats) -> Unit) {
         viewModelScope.launch {
-            val stats = repository.getEventStats(creatorId)
+            val result = repository.getEventsByCreator(creatorId)
+            val events = result.getOrNull() ?: emptyList()
+            
+            val stats = EventStats(
+                totalEvents = events.size,
+                totalGuests = events.sumOf { it.currentGuests },
+                upcomingEvents = events.count { it.date > System.currentTimeMillis() }
+            )
             callback(stats)
         }
     }

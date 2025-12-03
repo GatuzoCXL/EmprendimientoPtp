@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -18,6 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.magnus.viewmodel.EventViewModel
+import com.example.magnus.utils.canBeDeleted
+import com.example.magnus.utils.canBeEdited
+import com.example.magnus.utils.getStatus
+import com.example.magnus.ui.components.StatusBadge
+import com.example.magnus.ui.theme.EventError
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,6 +36,7 @@ fun EventDetailScreen(
     eventViewModel: EventViewModel = viewModel()
 ) {
     val eventState by eventViewModel.uiState.collectAsState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
     
     // Load event details and guests
     LaunchedEffect(eventId) {
@@ -66,6 +73,10 @@ fun EventDetailScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    val eventStatus = event.getStatus()
+                    val canDelete = event.canBeDeleted()
+                    val canEdit = event.canBeEdited()
+                    
                     // Event Header
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -76,12 +87,20 @@ fun EventDetailScreen(
                         Column(
                             modifier = Modifier.padding(20.dp)
                         ) {
-                            Text(
-                                text = event.name,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = event.name,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                StatusBadge(status = eventStatus)
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Creado por ${event.creatorName}",
@@ -258,27 +277,100 @@ fun EventDetailScreen(
                     }
                     
                     // Actions
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
-                            onClick = { onNavigateToGuestManagement(eventId) },
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Gestionar Invitados")
+                            Button(
+                                onClick = { onNavigateToGuestManagement(eventId) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Gestionar Invitados")
+                            }
+                            
+                            OutlinedButton(
+                                onClick = { /* TODO: Implementar compartir */ },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Compartir")
+                            }
                         }
                         
-                        OutlinedButton(
-                            onClick = { /* TODO: Implementar compartir */ },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Compartir")
+                        if (canDelete) {
+                            Button(
+                                onClick = { showDeleteDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = EventError
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Eliminar Evento")
+                            }
                         }
                     }
                 }
             }
         }
+    }
+    
+    if (showDeleteDialog && eventState.currentEvent != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = EventError,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    "¿Eliminar evento?",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que deseas eliminar \"${eventState.currentEvent!!.name}\"? Esta acción no se puede deshacer.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        eventViewModel.deleteEvent(
+                            eventId = eventId,
+                            eventDate = eventState.currentEvent!!.date,
+                            onSuccess = {
+                                showDeleteDialog = false
+                                onNavigateBack()
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = EventError
+                    )
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

@@ -10,57 +10,23 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class EventRepository(private val context: Context) {
-    private val apiService = RetrofitClient.getApiService(context)
-    private val dataStore = DataStoreManager(context)
+class EventRepository(context: Context) {
+    private val appContext = context.applicationContext
+    private val apiService = RetrofitClient.getApiService(appContext)
+    private val dataStore = DataStoreManager(appContext)
     
     suspend fun getAllEvents(): Result<List<Event>> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val response = apiService.getEventos()
-            
-            if (response.isSuccessful && response.body()?.success == true) {
-                val eventosDto = response.body()!!.data ?: emptyList()
-                
-                val events = eventosDto.map { dto ->
-                    Event(
-                        id = dto.id,
-                        name = dto.titulo,
-                        description = dto.descripcion ?: "",
-                        date = parseIsoToMillis(dto.fechaInicio),
-                        location = dto.lugar,
-                        latitude = 0.0, // Backend doesn't have coordinates yet
-                        longitude = 0.0,
-                        creatorId = dto.organizadorId,
-                        creatorName = dto.organizador?.nombre ?: "Desconocido",
-                        imageUrl = "", // Backend doesn't have images yet
-                        maxGuests = dto.capacidad,
-                        currentGuests = 0, // Backend doesn't track this yet
-                        isPublic = true,
-                        createdAt = parseIsoToMillis(dto.createdAt),
-                        updatedAt = parseIsoToMillis(dto.createdAt)
-                    )
-                }
-                
-                // Cache events locally
-                dataStore.saveEvents(events)
-                
-                Result.success(events)
+            // El backend no tiene endpoint para todos los eventos
+            // Cargar desde cache local
+            val cachedEvents = dataStore.getEvents()
+            if (cachedEvents.isNotEmpty()) {
+                Result.success(cachedEvents)
             } else {
-                val errorMessage = response.body()?.message ?: "Error al cargar eventos"
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception("No hay eventos disponibles. Use getEventsByCreator() en su lugar."))
             }
         } catch (e: Exception) {
-            // Try to load from cache if network fails
-            try {
-                val cachedEvents = dataStore.getEvents()
-                if (cachedEvents.isNotEmpty()) {
-                    Result.success(cachedEvents)
-                } else {
-                    Result.failure(Exception("Error de conexión: ${e.message}"))
-                }
-            } catch (cacheError: Exception) {
-                Result.failure(Exception("Error de conexión: ${e.message}"))
-            }
+            Result.failure(Exception("Error al cargar eventos: ${e.message}"))
         }
     }
     
@@ -76,11 +42,12 @@ class EventRepository(private val context: Context) {
                     name = dto.titulo,
                     description = dto.descripcion ?: "",
                     date = parseIsoToMillis(dto.fechaInicio),
+                    endDate = parseIsoToMillis(dto.fechaFin),
                     location = dto.lugar,
                     latitude = 0.0,
                     longitude = 0.0,
                     creatorId = dto.organizadorId,
-                    creatorName = dto.organizador?.nombre ?: "Desconocido",
+                    creatorName = dto.organizador?.nombreEmpresa ?: "Desconocido",
                     imageUrl = "",
                     maxGuests = dto.capacidad,
                     currentGuests = 0,
@@ -124,11 +91,12 @@ class EventRepository(private val context: Context) {
                     name = dto.titulo,
                     description = dto.descripcion ?: "",
                     date = parseIsoToMillis(dto.fechaInicio),
+                    endDate = parseIsoToMillis(dto.fechaFin),
                     location = dto.lugar,
                     latitude = event.latitude,
                     longitude = event.longitude,
                     creatorId = dto.organizadorId,
-                    creatorName = dto.organizador?.nombre ?: "Desconocido",
+                    creatorName = dto.organizador?.nombreEmpresa ?: "Desconocido",
                     imageUrl = event.imageUrl,
                     maxGuests = dto.capacidad,
                     currentGuests = 0,
@@ -172,11 +140,12 @@ class EventRepository(private val context: Context) {
                     name = dto.titulo,
                     description = dto.descripcion ?: "",
                     date = parseIsoToMillis(dto.fechaInicio),
+                    endDate = parseIsoToMillis(dto.fechaFin),
                     location = dto.lugar,
                     latitude = event.latitude,
                     longitude = event.longitude,
                     creatorId = dto.organizadorId,
-                    creatorName = dto.organizador?.nombre ?: "Desconocido",
+                    creatorName = dto.organizador?.nombreEmpresa ?: "Desconocido",
                     imageUrl = event.imageUrl,
                     maxGuests = dto.capacidad,
                     currentGuests = event.currentGuests,
@@ -212,18 +181,53 @@ class EventRepository(private val context: Context) {
     
     suspend fun getEventsByCreator(creatorId: String): Result<List<Event>> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val allEvents = getAllEvents()
+            val response = apiService.getEventosPorOrganizador(creatorId)
             
-            if (allEvents.isSuccess) {
-                val userEvents = allEvents.getOrNull()
-                    ?.filter { it.creatorId == creatorId }
-                    ?: emptyList()
-                Result.success(userEvents)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val eventosDto = response.body()!!.data ?: emptyList()
+                
+                val events = eventosDto.map { dto ->
+                    Event(
+                        id = dto.id,
+                        name = dto.titulo,
+                        description = dto.descripcion ?: "",
+                        date = parseIsoToMillis(dto.fechaInicio),
+                        endDate = parseIsoToMillis(dto.fechaFin),
+                        location = dto.lugar,
+                        latitude = 0.0,
+                        longitude = 0.0,
+                        creatorId = dto.organizadorId,
+                        creatorName = dto.organizador?.nombreEmpresa ?: "Desconocido",
+                        imageUrl = "",
+                        maxGuests = dto.capacidad,
+                        currentGuests = 0,
+                        isPublic = true,
+                        createdAt = parseIsoToMillis(dto.createdAt),
+                        updatedAt = parseIsoToMillis(dto.createdAt)
+                    )
+                }
+                
+                // Cache events locally
+                dataStore.saveEvents(events)
+                
+                Result.success(events)
             } else {
-                allEvents
+                val errorMessage = response.body()?.message ?: "Error al cargar eventos"
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("Error al cargar eventos: ${e.message}"))
+            // Try to load from cache if network fails
+            try {
+                val cachedEvents = dataStore.getEvents()
+                    .filter { it.creatorId == creatorId }
+                if (cachedEvents.isNotEmpty()) {
+                    Result.success(cachedEvents)
+                } else {
+                    Result.failure(Exception("Error de conexión: ${e.message}"))
+                }
+            } catch (cacheError: Exception) {
+                Result.failure(Exception("Error de conexión: ${e.message}"))
+            }
         }
     }
     

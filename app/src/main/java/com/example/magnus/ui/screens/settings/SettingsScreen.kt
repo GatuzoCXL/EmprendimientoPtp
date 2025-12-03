@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.magnus.ui.components.AnimatedListItem
+import com.example.magnus.ui.components.SectionHeader
 import com.example.magnus.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,7 +23,7 @@ import com.example.magnus.viewmodel.AuthViewModel
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onSignOut: () -> Unit,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel
 ) {
     val authState by authViewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -91,130 +93,139 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Account Section
-            SettingsSectionHeader("Cuenta")
-            
-            SettingsItem(
-                icon = Icons.Default.Person,
-                title = "Perfil",
-                subtitle = authState.userData?.email ?: "No disponible",
-                onClick = { /* Ya existe la pantalla de perfil */ }
-            )
-            
-            HorizontalDivider()
-            
-            // App Settings Section
-            SettingsSectionHeader("Aplicación")
-            
-            SettingsItem(
-                icon = Icons.Default.Notifications,
-                title = "Notificaciones",
-                subtitle = "Gestionar notificaciones",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            SettingsItem(
-                icon = Icons.Default.Settings,
-                title = "Idioma",
-                subtitle = "Español",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            SettingsItem(
-                icon = Icons.Default.Settings,
-                title = "Tema",
-                subtitle = "Sistema",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            // Data Section
-            SettingsSectionHeader("Datos")
-            
-            SettingsItem(
-                icon = Icons.Default.Settings,
-                title = "Almacenamiento",
-                subtitle = "Gestionar datos locales",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            SettingsItem(
-                icon = Icons.Default.Settings,
-                title = "Sincronización",
-                subtitle = "Modo sin conexión activado",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            // About Section
-            SettingsSectionHeader("Información")
-            
-            SettingsItem(
-                icon = Icons.Default.Info,
-                title = "Acerca de",
-                subtitle = "Magnus v1.0.0",
-                onClick = { showAboutDialog = true }
-            )
-            
-            HorizontalDivider()
-            
-            SettingsItem(
-                icon = Icons.Default.Info,
-                title = "Ayuda y Soporte",
-                subtitle = "Centro de ayuda",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            SettingsItem(
-                icon = Icons.Default.Info,
-                title = "Términos y Condiciones",
-                subtitle = "Políticas de uso",
-                onClick = { /* Funcionalidad futura */ }
-            )
-            
-            HorizontalDivider()
-            
-            // Logout
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(Icons.Default.ExitToApp, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Cerrar Sesión", fontSize = 16.sp)
+            AnimatedListItem(index = 0) {
+                Column {
+                    SectionHeader(title = "Cuenta", modifier = Modifier.padding(horizontal = 16.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Person,
+                        title = "Perfil",
+                        subtitle = authState.userData?.email ?: "No disponible",
+                        onClick = { /* Ya existe la pantalla de perfil */ }
+                    )
+                    
+                    HorizontalDivider()
+                }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            // App Settings Section
+            AnimatedListItem(index = 1) {
+                Column {
+                    SectionHeader(title = "Aplicación", modifier = Modifier.padding(horizontal = 16.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Notificaciones",
+                        subtitle = "Gestionar notificaciones",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Settings,
+                        title = "Idioma",
+                        subtitle = "Español",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Settings,
+                        title = "Tema",
+                        subtitle = "Sistema",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                }
+            }
+            
+            // Data Section
+            AnimatedListItem(index = 2) {
+                Column {
+                    SectionHeader(title = "Datos", modifier = Modifier.padding(horizontal = 16.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Settings,
+                        title = "Almacenamiento",
+                        subtitle = "Gestionar datos locales",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Settings,
+                        title = "Sincronización",
+                        subtitle = "Modo sin conexión activado",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                }
+            }
+            
+            // About Section
+            AnimatedListItem(index = 3) {
+                Column {
+                    SectionHeader(title = "Información", modifier = Modifier.padding(horizontal = 16.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Info,
+                        title = "Acerca de",
+                        subtitle = "Magnus v1.0.0",
+                        onClick = { showAboutDialog = true }
+                    )
+                    
+                    HorizontalDivider()
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Info,
+                        title = "Ayuda y Soporte",
+                        subtitle = "Centro de ayuda",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Info,
+                        title = "Términos y Condiciones",
+                        subtitle = "Políticas de uso",
+                        onClick = { /* Funcionalidad futura */ }
+                    )
+                    
+                    HorizontalDivider()
+                }
+            }
+            
+            // Logout
+            AnimatedListItem(index = 4) {
+                Column {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(
+                        onClick = { showLogoutDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cerrar Sesión", fontSize = 16.sp)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
         }
     }
-}
-
-@Composable
-private fun SettingsSectionHeader(title: String) {
-    Text(
-        text = title,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(16.dp, 16.dp, 16.dp, 8.dp)
-    )
 }
 
 @Composable

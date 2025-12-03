@@ -139,15 +139,11 @@ class MockEventRepository(context: Context) {
         val totalGuests = userEvents.sumOf { event ->
             guests.count { it.eventId == event.id }
         }
-        val confirmedGuests = userEvents.sumOf { event ->
-            guests.count { it.eventId == event.id && it.status == GuestStatus.CONFIRMED }
-        }
         
         return EventStats(
             totalEvents = userEvents.size,
             totalGuests = totalGuests,
-            confirmedGuests = confirmedGuests,
-            pendingGuests = totalGuests - confirmedGuests
+            upcomingEvents = userEvents.count { it.date > System.currentTimeMillis() }
         )
     }
     
@@ -156,10 +152,3 @@ class MockEventRepository(context: Context) {
         dataStore.clearAll()
     }
 }
-
-data class EventStats(
-    val totalEvents: Int,
-    val totalGuests: Int,
-    val confirmedGuests: Int,
-    val pendingGuests: Int
-)

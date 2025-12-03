@@ -9,9 +9,10 @@ import com.example.magnus.data.remote.dto.RegisterRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class AuthRepository(private val context: Context) {
-    private val apiService = RetrofitClient.getApiService(context)
-    private val dataStore = DataStoreManager(context)
+class AuthRepository(context: Context) {
+    private val appContext = context.applicationContext
+    private val apiService = RetrofitClient.getApiService(appContext)
+    private val dataStore = DataStoreManager(appContext)
     
     suspend fun getCurrentUser(): User? = withContext(Dispatchers.IO) {
         return@withContext dataStore.getUserData()
@@ -35,6 +36,7 @@ class AuthRepository(private val context: Context) {
                     id = loginData.user.id,
                     email = loginData.user.email,
                     name = loginData.user.nombre,
+                    rol = com.example.magnus.data.model.UserRole.fromInt(loginData.user.rol),
                     profileImageUrl = "", // Backend doesn't have this yet
                     createdAt = parseIsoDate(loginData.user.createdAt)
                 )
@@ -43,7 +45,17 @@ class AuthRepository(private val context: Context) {
                 
                 Result.success(user)
             } else {
-                val errorMessage = response.body()?.message ?: "Error al iniciar sesión"
+                // Parse validation errors from backend
+                val errorMessage = if (response.code() == 400) {
+                    try {
+                        val errorBody = response.errorBody()?.string()
+                        parseValidationErrors(errorBody)
+                    } catch (e: Exception) {
+                        response.body()?.message ?: "Credenciales inválidas"
+                    }
+                } else {
+                    response.body()?.message ?: "Error al iniciar sesión"
+                }
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
@@ -51,9 +63,9 @@ class AuthRepository(private val context: Context) {
         }
     }
     
-    suspend fun signUp(email: String, password: String, name: String): Result<User> = withContext(Dispatchers.IO) {
+    suspend fun signUp(email: String, password: String, name: String, rol: Int = 0): Result<User> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val request = RegisterRequest(name, email, password)
+            val request = RegisterRequest(name, email, password, rol)
             val response = apiService.register(request)
             
             if (response.isSuccessful && response.body()?.success == true) {
@@ -62,7 +74,14 @@ class AuthRepository(private val context: Context) {
                 // After registration, automatically login
                 signIn(email, password)
             } else {
-                val errorMessage = response.body()?.message ?: "Error al registrarse"
+                val errorBody = response.errorBody()?.string() ?: ""
+                
+                val errorMessage = if (errorBody.contains("\"errors\"")) {
+                    parseApiErrors(errorBody)
+                } else {
+                    "Error al registrarse"
+                }
+                
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
@@ -90,6 +109,49 @@ class AuthRepository(private val context: Context) {
             System.currentTimeMillis()
         } catch (e: Exception) {
             System.currentTimeMillis()
+        }
+    }
+    
+    private fun parseValidationErrors(errorBody: String?): String {
+        if (errorBody.isNullOrEmpty()) return "Error de validación"
+        
+        return try {
+            val gson = com.google.gson.Gson()
+            val errorResponse = gson.fromJson(errorBody, com.example.magnus.data.remote.dto.ValidationErrorResponse::class.java)
+            
+            // Extract all error messages from the errors map
+            val allErrors = errorResponse.errors?.flatMap { (field, messages) ->
+                messages.map { "$field: $it" }
+            } ?: listOf(errorResponse.title ?: "Error de validación")
+            
+            // Return first 3 errors joined
+            allErrors.take(3).joinToString("\n")
+        } catch (e: Exception) {
+            "Error de validación"
+        }
+    }
+    
+    private fun parseApiErrors(errorBody: String?): String {
+        if (errorBody.isNullOrEmpty()) return "Error del servidor"
+        
+        return try {
+            val gson = com.google.gson.Gson()
+            val errorResponse = gson.fromJson(errorBody, com.example.magnus.data.remote.dto.ApiResponse::class.java)
+            
+            val errors = errorResponse.errors?.firstOrNull() 
+                ?: errorResponse.message 
+                ?: "Error del servidor"
+            
+            when {
+                errors.contains("Ya existe un usuario", ignoreCase = true) ->
+                    "Este correo electrónico ya está registrado. Intenta iniciar sesión."
+                errors.contains("initialization string", ignoreCase = true) || 
+                errors.contains("connection", ignoreCase = true) ->
+                    "El servidor está experimentando problemas. Por favor, intenta más tarde."
+                else -> errors
+            }
+        } catch (e: Exception) {
+            "Error del servidor"
         }
     }
 }

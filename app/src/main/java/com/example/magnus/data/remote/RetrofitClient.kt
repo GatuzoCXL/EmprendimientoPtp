@@ -61,9 +61,13 @@ object RetrofitClient {
         val request = chain.request()
         val newRequest = request.newBuilder()
         
-        // Get token from DataStore
-        val token = runBlocking {
-            dataStoreManager?.getAuthToken()?.first()
+        // Get token from DataStore (runBlocking is acceptable in OkHttp interceptors)
+        val token = try {
+            runBlocking {
+                dataStoreManager?.getAuthToken()?.first()
+            }
+        } catch (e: Exception) {
+            null
         }
         
         if (!token.isNullOrEmpty()) {

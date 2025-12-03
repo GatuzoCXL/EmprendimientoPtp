@@ -76,6 +76,13 @@ dependencies {
     // Image loading with Coil
     implementation("io.coil-kt:coil-compose:2.6.0")
     
+    // Lottie animations
+    implementation("com.airbnb.android:lottie-compose:6.3.0")
+    
+    // Accompanist - UI enhancements
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
+    implementation("com.google.accompanist:accompanist-placeholder-material3:0.34.0")
+    
     // DataStore for local persistence
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     

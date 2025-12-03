@@ -20,8 +20,10 @@ interface MagnusApiService {
     
     // ============ EVENTOS ENDPOINTS ============
     
-    @GET("api/eventos")
-    suspend fun getEventos(): Response<ApiResponse<List<EventoDto>>>
+    @GET("api/eventos/organizador/{organizadorId}")
+    suspend fun getEventosPorOrganizador(
+        @Path("organizadorId") organizadorId: String
+    ): Response<ApiResponse<List<EventoDto>>>
     
     @GET("api/eventos/{id}")
     suspend fun getEvento(
@@ -43,4 +45,61 @@ interface MagnusApiService {
     suspend fun deleteEvento(
         @Path("id") id: String
     ): Response<ApiResponse<Unit>>
+    
+    // ============ INVITACIONES ENDPOINTS ============
+    
+    @POST("api/EventoInvitados/invitar")
+    suspend fun invitarUsuario(
+        @Body request: InvitarUsuarioRequest
+    ): Response<ApiResponse<EventoInvitadoDto>>
+    
+    @POST("api/EventoInvitados/autopostularse")
+    suspend fun autopostularse(
+        @Body request: AutopostularseRequest
+    ): Response<ApiResponse<EventoInvitadoDto>>
+    
+    @PUT("api/EventoInvitados/{id}/aceptar")
+    suspend fun aceptarInvitacion(
+        @Path("id") id: String
+    ): Response<ApiResponse<Unit>>
+    
+    @PUT("api/EventoInvitados/{id}/rechazar")
+    suspend fun rechazarInvitacion(
+        @Path("id") id: String
+    ): Response<ApiResponse<Unit>>
+    
+    @PUT("api/EventoInvitados/{id}/aprobar")
+    suspend fun aprobarAutopostulacion(
+        @Path("id") id: String
+    ): Response<ApiResponse<Unit>>
+    
+    @PUT("api/EventoInvitados/{id}/rechazar-organizador")
+    suspend fun rechazarAutopostulacion(
+        @Path("id") id: String
+    ): Response<ApiResponse<Unit>>
+    
+    @GET("api/EventoInvitados/evento/{eventoId}")
+    suspend fun getInvitacionesPorEvento(
+        @Path("eventoId") eventoId: String
+    ): Response<ApiResponse<List<EventoInvitadoDto>>>
+    
+    @GET("api/EventoInvitados/usuario/{usuarioId}")
+    suspend fun getInvitacionesPorUsuario(
+        @Path("usuarioId") usuarioId: String
+    ): Response<ApiResponse<List<EventoInvitadoDto>>>
+    
+    // ============ ORGANIZADORES ENDPOINTS ============
+    
+    @GET("api/Organizadores")
+    suspend fun getAllOrganizadores(): Response<ApiResponse<List<OrganizadorDto>>>
+    
+    @GET("api/Organizadores/{id}")
+    suspend fun getOrganizadorById(
+        @Path("id") id: String
+    ): Response<ApiResponse<OrganizadorDto>>
+    
+    @POST("api/Organizadores")
+    suspend fun createOrganizador(
+        @Body request: CreateOrganizadorRequest
+    ): Response<ApiResponse<OrganizadorDto>>
 }

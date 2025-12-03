@@ -1,7 +1,11 @@
 package com.example.magnus.ui.screens.dashboard
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -12,13 +16,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.magnus.data.model.Event
+import com.example.magnus.ui.components.*
+import com.example.magnus.ui.theme.*
 import com.example.magnus.viewmodel.AuthViewModel
 import com.example.magnus.viewmodel.EventViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +37,7 @@ fun DashboardScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onSignOut: () -> Unit,
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
     eventViewModel: EventViewModel = viewModel()
 ) {
     Scaffold(
@@ -51,12 +60,12 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            GradientFloatingActionButton(
                 onClick = onNavigateToCreateEvent,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Crear evento")
-            }
+                icon = Icons.Default.Add,
+                contentDescription = "Crear evento",
+                modifier = Modifier.pulseEffect()
+            )
         }
     ) { paddingValues ->
         val authState by authViewModel.uiState.collectAsState()
@@ -87,90 +96,108 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // Welcome Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp)
+                // Welcome Section con gradiente y animación
+                AnimatedListItem(index = 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        EventPrimary,
+                                        EventSecondary
+                                    )
+                                )
+                            )
                     ) {
-                        Text(
-                            text = "¡Hola ${authState.userData?.name ?: "Usuario"}!",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        Column(
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Text(
+                                text = "¡Hola ${authState.userData?.name ?: "Usuario"}!",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Gestiona tus eventos de manera inteligente y eficiente",
+                                fontSize = 16.sp,
+                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            item {
+                // Quick Stats con animación stagger
+                AnimatedListItem(index = 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(
+                            title = "Eventos",
+                            value = "${stats?.totalEvents ?: 0}",
+                            icon = Icons.Default.DateRange,
+                            color = EventPrimary,
+                            modifier = Modifier.weight(1f)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Gestiona tus eventos de manera inteligente y eficiente",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        StatCard(
+                            title = "Invitados",
+                            value = "${stats?.totalGuests ?: 0}",
+                            icon = Icons.Default.Person,
+                            color = EventSecondary,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
             
             item {
-                // Quick Stats
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatCard(
-                        title = "Eventos Creados",
-                        value = "${stats?.totalEvents ?: 0}",
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        title = "Invitados Totales",
-                        value = "${stats?.totalGuests ?: 0}",
-                        modifier = Modifier.weight(1f)
+                // Quick Actions con animación
+                AnimatedListItem(index = 2) {
+                    SectionHeader(title = "Acciones Rápidas")
+                }
+            }
+            
+            item {
+                AnimatedListItem(index = 3) {
+                    ActionCard(
+                        title = "Crear Nuevo Evento",
+                        description = "Organiza un nuevo evento y gestiona invitados",
+                        icon = Icons.Default.Add,
+                        color = EventPrimary,
+                        onClick = onNavigateToCreateEvent
                     )
                 }
             }
             
             item {
-                // Quick Actions
-                Text(
-                    text = "Acciones Rápidas",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            
-            item {
-                ActionCard(
-                    title = "Crear Nuevo Evento",
-                    description = "Organiza un nuevo evento y gestiona invitados",
-                    icon = Icons.Default.Add,
-                    onClick = onNavigateToCreateEvent
-                )
-            }
-            
-            item {
-                ActionCard(
-                    title = "Mis Eventos",
-                    description = "Ver y gestionar todos tus eventos",
-                    icon = Icons.Default.DateRange,
-                    onClick = onNavigateToMyEvents
-                )
+                AnimatedListItem(index = 4) {
+                    ActionCard(
+                        title = "Mis Eventos",
+                        description = "Ver y gestionar todos tus eventos",
+                        icon = Icons.Default.DateRange,
+                        color = EventSecondary,
+                        onClick = onNavigateToMyEvents
+                    )
+                }
             }
             
             item {
                 // Recent Events Section (placeholder)
-                Text(
-                    text = "Eventos Recientes",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                SectionHeader(title = "Eventos Recientes")
                 
                 Card(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -180,79 +207,11 @@ fun DashboardScreen(
                     ) {
                         Text(
                             text = "No tienes eventos recientes",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = value,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ActionCard(
-    title: String,
-    description: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = description,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

@@ -4,7 +4,8 @@ data class Event(
     val id: String = "",
     val name: String = "",
     val description: String = "",
-    val date: Long = 0L,
+    val date: Long = 0L, // FechaInicio
+    val endDate: Long = 0L, // FechaFin
     val location: String = "",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,

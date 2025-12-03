@@ -5,6 +5,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -41,7 +44,8 @@ sealed class Screen(val route: String) {
 @Composable
 fun MagnusNavigation(
     navController: NavHostController = rememberNavController(),
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    eventViewModel: com.example.magnus.viewmodel.EventViewModel = viewModel()
 ) {
     val authState by authViewModel.uiState.collectAsState()
     
@@ -51,9 +55,43 @@ fun MagnusNavigation(
         Screen.Login.route
     }
     
+    androidx.compose.runtime.LaunchedEffect(authState.isSignedIn) {
+        android.util.Log.d("MagnusNav", "Auth state changed: isSignedIn=${authState.isSignedIn}, currentRoute=${navController.currentDestination?.route}")
+        if (!authState.isSignedIn && navController.currentDestination?.route != Screen.Login.route) {
+            android.util.Log.d("MagnusNav", "Navigating to Login")
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+    
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        enterTransition = {
+            slideIntoContainer(
+                androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(300)
+            ) + fadeIn(animationSpec = tween(300))
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(300)
+            ) + fadeOut(animationSpec = tween(300))
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(300)
+            ) + fadeIn(animationSpec = tween(300))
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(300)
+            ) + fadeOut(animationSpec = tween(300))
+        }
     ) {
         // Auth screens
         composable(Screen.Login.route) {
@@ -104,14 +142,18 @@ fun MagnusNavigation(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                authViewModel = authViewModel,
+                eventViewModel = eventViewModel
             )
         }
         
         // Event screens
         composable(Screen.CreateEvent.route) {
             CreateEventScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                authViewModel = authViewModel,
+                eventViewModel = eventViewModel
             )
         }
         
@@ -123,7 +165,9 @@ fun MagnusNavigation(
                 onNavigateToCreateEvent = {
                     navController.navigate(Screen.CreateEvent.route)
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                authViewModel = authViewModel,
+                eventViewModel = eventViewModel
             )
         }
         
@@ -151,7 +195,8 @@ fun MagnusNavigation(
         // Profile Screen
         composable(Screen.Profile.route) {
             ProfileScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                authViewModel = authViewModel
             )
         }
         
@@ -160,10 +205,12 @@ fun MagnusNavigation(
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onSignOut = {
+                    authViewModel.signOut()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
     }
