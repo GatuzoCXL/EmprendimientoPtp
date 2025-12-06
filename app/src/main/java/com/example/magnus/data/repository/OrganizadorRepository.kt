@@ -70,6 +70,39 @@ class OrganizadorRepository(context: Context) {
         }
     }
 
+    suspend fun getOrganizadorByUsuarioId(usuarioId: String): Result<Organizador?> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getOrganizadorByUsuarioId(usuarioId)
+            if (response.isSuccessful) {
+                val dto = response.body()?.data
+                if (dto == null) {
+                    return@withContext Result.success(null)
+                }
+                val organizador = Organizador(
+                    id = dto.id,
+                    nombreEmpresa = dto.nombreEmpresa,
+                    descripcion = dto.descripcion,
+                    telefono = dto.telefono,
+                    direccion = dto.direccion,
+                    precioPorEvento = dto.precioPorEvento,
+                    añosExperiencia = dto.añosExperiencia,
+                    especialidad = dto.especialidad,
+                    verificado = dto.verificado,
+                    rating = dto.rating,
+                    cantidadReseñas = dto.cantidadReseñas,
+                    usuarioId = dto.usuarioId
+                )
+                Result.success(organizador)
+            } else if (response.code() == 404) {
+                Result.success(null)
+            } else {
+                Result.failure(Exception(response.message() ?: "Error al verificar organizador"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun createOrganizador(data: CreateOrganizadorData): Result<Organizador> = withContext(Dispatchers.IO) {
         try {
             val request = CreateOrganizadorRequest(

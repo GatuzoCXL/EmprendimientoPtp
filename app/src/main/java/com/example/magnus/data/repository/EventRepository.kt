@@ -75,7 +75,7 @@ class EventRepository(context: Context) {
                 titulo = event.name,
                 descripcion = event.description,
                 fechaInicio = formatMillisToIso(event.date),
-                fechaFin = formatMillisToIso(event.date + (2 * 60 * 60 * 1000)), // +2 hours default
+                fechaFin = formatMillisToIso(event.endDate),
                 lugar = event.location,
                 capacidad = event.maxGuests,
                 organizadorId = userId
@@ -124,7 +124,7 @@ class EventRepository(context: Context) {
                 titulo = event.name,
                 descripcion = event.description,
                 fechaInicio = formatMillisToIso(event.date),
-                fechaFin = formatMillisToIso(event.date + (2 * 60 * 60 * 1000)),
+                fechaFin = formatMillisToIso(event.endDate),
                 lugar = event.location,
                 capacidad = event.maxGuests,
                 organizadorId = userId

@@ -21,9 +21,11 @@ import com.example.magnus.ui.viewmodel.OrganizadorViewModel
 @Composable
 fun BecomeOrganizerScreen(
     navController: NavController,
-    userId: String,
+    authViewModel: com.example.magnus.viewmodel.AuthViewModel,
     viewModel: OrganizadorViewModel = viewModel()
 ) {
+    val authState by authViewModel.uiState.collectAsState()
+    val userId = authState.userData?.id ?: ""
     var nombreEmpresa by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
@@ -32,9 +34,26 @@ fun BecomeOrganizerScreen(
     var especialidad by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
 
+    var validationError by remember { mutableStateOf<String?>(null) }
+
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val createSuccess by viewModel.createSuccess.collectAsState()
+    val existingOrganizador by viewModel.existingOrganizador.collectAsState()
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            viewModel.checkIfUserIsOrganizador(userId)
+        }
+    }
+
+    LaunchedEffect(existingOrganizador) {
+        existingOrganizador?.let { organizador ->
+            navController.navigate("organizador_detail/${organizador.id}") {
+                popUpTo("become_organizer") { inclusive = true }
+            }
+        }
+    }
 
     LaunchedEffect(createSuccess) {
         if (createSuccess) {
@@ -102,10 +121,11 @@ fun BecomeOrganizerScreen(
             OutlinedTextField(
                 value = direccion,
                 onValueChange = { direccion = it },
-                label = { Text("Dirección") },
-                placeholder = { Text("Ciudad, Estado") },
+                label = { Text("Dirección *") },
+                placeholder = { Text("Guadalajara, Jalisco") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                supportingText = { Text("Mínimo 5 caracteres") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -118,11 +138,12 @@ fun BecomeOrganizerScreen(
                     value = precioPorEvento,
                     onValueChange = { precioPorEvento = it },
                     label = { Text("Precio por Evento *") },
-                    placeholder = { Text("5000") },
+                    placeholder = { Text("15000") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    prefix = { Text("$") }
+                    prefix = { Text("$") },
+                    supportingText = { Text("$1K - $500K", style = MaterialTheme.typography.labelSmall) }
                 )
 
                 OutlinedTextField(
@@ -132,19 +153,20 @@ fun BecomeOrganizerScreen(
                     placeholder = { Text("5") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = { Text("1 - 50 años", style = MaterialTheme.typography.labelSmall) }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = especialidad,
                 onValueChange = { especialidad = it },
-                label = { Text("Especialidad") },
-                placeholder = { Text("Bodas elegantes, eventos al aire libre, etc.") },
+                label = { Text("Especialidad *") },
+                placeholder = { Text("Bodas elegantes, eventos corporativos, XV años...") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                supportingText = { Text("Mínimo 5 caracteres") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -152,17 +174,19 @@ fun BecomeOrganizerScreen(
             OutlinedTextField(
                 value = descripcion,
                 onValueChange = { descripcion = it },
-                label = { Text("Descripción del Servicio") },
-                placeholder = { Text("Cuéntanos sobre tus servicios, experiencia, y qué te hace único...") },
+                label = { Text("Descripción del Servicio *") },
+                placeholder = { Text("Describe tus servicios, experiencia, logros y qué te hace único...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
-                maxLines = 6
+                maxLines = 6,
+                supportingText = { Text("${descripcion.length} / 50 caracteres mínimo") }
+            )   maxLines = 6
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            error?.let {
+            (validationError ?: error)?.let {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -192,22 +216,54 @@ fun BecomeOrganizerScreen(
 
                 Button(
                     onClick = {
+                        validationError = null
+                        
+                        // Validaciones
+                        if (nombreEmpresa.length < 3) {
+                            validationError = "El nombre de la empresa debe tener al menos 3 caracteres"
+                            return@Button
+                        }
+                        
+                        if (telefono.length < 10) {
+                            validationError = "El teléfono debe tener al menos 10 dígitos"
+                            return@Button
+                        }
+                        
+                        if (direccion.length < 5) {
+                            validationError = "La dirección debe tener al menos 5 caracteres"
+                            return@Button
+                        }
+                        
                         val precio = precioPorEvento.toDoubleOrNull()
+                        if (precio == null || precio < 1000 || precio > 500000) {
+                            validationError = "El precio debe estar entre $1,000 y $500,000"
+                            return@Button
+                        }
+                        
                         val experiencia = añosExperiencia.toIntOrNull()
-
-                        if (nombreEmpresa.isBlank() || telefono.isBlank() || precio == null || experiencia == null) {
-                            // Validación básica
+                        if (experiencia == null || experiencia < 1 || experiencia > 50) {
+                            validationError = "Los años de experiencia deben estar entre 1 y 50"
+                            return@Button
+                        }
+                        
+                        if (especialidad.length < 5) {
+                            validationError = "La especialidad debe tener al menos 5 caracteres"
+                            return@Button
+                        }
+                        
+                        if (descripcion.length < 50) {
+                            validationError = "La descripción debe tener al menos 50 caracteres"
                             return@Button
                         }
 
                         val data = CreateOrganizadorData(
-                            nombreEmpresa = nombreEmpresa,
-                            descripcion = descripcion.ifBlank { null },
-                            telefono = telefono,
-                            direccion = direccion.ifBlank { null },
+                            nombreEmpresa = nombreEmpresa.trim(),
+                            descripcion = descripcion.trim(),
+                            telefono = telefono.trim(),
+                            direccion = direccion.trim(),
                             precioPorEvento = precio,
                             añosExperiencia = experiencia,
-                            especialidad = especialidad.ifBlank { null },
+                            especialidad = especialidad.trim(),
                             usuarioId = userId
                         )
                         viewModel.createOrganizador(data)

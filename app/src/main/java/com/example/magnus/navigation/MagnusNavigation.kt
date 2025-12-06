@@ -20,6 +20,9 @@ import com.example.magnus.ui.screens.events.MyEventsScreen
 import com.example.magnus.ui.screens.guests.GuestManagementScreen
 import com.example.magnus.ui.screens.profile.ProfileScreen
 import com.example.magnus.ui.screens.settings.SettingsScreen
+import com.example.magnus.ui.screens.organizadores.OrganizadoresScreen
+import com.example.magnus.ui.screens.organizadores.OrganizadorDetailScreen
+import com.example.magnus.ui.screens.organizadores.BecomeOrganizerScreen
 import com.example.magnus.viewmodel.AuthViewModel
 
 sealed class Screen(val route: String) {
@@ -39,6 +42,11 @@ sealed class Screen(val route: String) {
     object EventMap : Screen("event_map/{eventId}") {
         fun createRoute(eventId: String) = "event_map/$eventId"
     }
+    object Organizadores : Screen("organizadores")
+    object OrganizadorDetail : Screen("organizador_detail/{organizadorId}") {
+        fun createRoute(organizadorId: String) = "organizador_detail/$organizadorId"
+    }
+    object BecomeOrganizer : Screen("become_organizer")
 }
 
 @Composable
@@ -137,6 +145,9 @@ fun MagnusNavigation(
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
+                onNavigateToOrganizadores = {
+                    navController.navigate(Screen.Organizadores.route)
+                },
                 onSignOut = {
                     authViewModel.signOut()
                     navController.navigate(Screen.Login.route) {
@@ -210,6 +221,28 @@ fun MagnusNavigation(
                         popUpTo(0) { inclusive = true }
                     }
                 },
+                authViewModel = authViewModel
+            )
+        }
+        
+        // Organizadores Screens
+        composable(Screen.Organizadores.route) {
+            OrganizadoresScreen(
+                navController = navController
+            )
+        }
+        
+        composable(Screen.OrganizadorDetail.route) { backStackEntry ->
+            val organizadorId = backStackEntry.arguments?.getString("organizadorId") ?: ""
+            OrganizadorDetailScreen(
+                navController = navController,
+                organizadorId = organizadorId
+            )
+        }
+        
+        composable(Screen.BecomeOrganizer.route) {
+            BecomeOrganizerScreen(
+                navController = navController,
                 authViewModel = authViewModel
             )
         }

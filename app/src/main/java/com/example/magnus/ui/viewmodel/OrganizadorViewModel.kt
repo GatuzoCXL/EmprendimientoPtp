@@ -29,6 +29,9 @@ class OrganizadorViewModel(application: Application) : AndroidViewModel(applicat
     private val _createSuccess = MutableStateFlow(false)
     val createSuccess: StateFlow<Boolean> = _createSuccess.asStateFlow()
 
+    private val _existingOrganizador = MutableStateFlow<Organizador?>(null)
+    val existingOrganizador: StateFlow<Organizador?> = _existingOrganizador.asStateFlow()
+
     fun loadOrganizadores() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -47,6 +50,17 @@ class OrganizadorViewModel(application: Application) : AndroidViewModel(applicat
             repository.getOrganizadorById(id)
                 .onSuccess { _selectedOrganizador.value = it }
                 .onFailure { _error.value = it.message ?: "Error desconocido" }
+            _isLoading.value = false
+        }
+    }
+
+    fun checkIfUserIsOrganizador(usuarioId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            repository.getOrganizadorByUsuarioId(usuarioId)
+                .onSuccess { _existingOrganizador.value = it }
+                .onFailure { _error.value = it.message ?: "Error al verificar organizador" }
             _isLoading.value = false
         }
     }

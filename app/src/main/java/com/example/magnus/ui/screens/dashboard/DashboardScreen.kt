@@ -36,6 +36,7 @@ fun DashboardScreen(
     onNavigateToMyEvents: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToOrganizadores: () -> Unit = {},
     onSignOut: () -> Unit,
     authViewModel: AuthViewModel,
     eventViewModel: EventViewModel = viewModel()
@@ -183,6 +184,18 @@ fun DashboardScreen(
                         icon = Icons.Default.DateRange,
                         color = EventSecondary,
                         onClick = onNavigateToMyEvents
+                    )
+                }
+            }
+            
+            item {
+                AnimatedListItem(index = 5) {
+                    ActionCard(
+                        title = "Organizadores de Bodas",
+                        description = "Encuentra el planificador perfecto para tu evento",
+                        icon = Icons.Default.Person,
+                        color = EventTertiary,
+                        onClick = onNavigateToOrganizadores
                     )
                 }
             }
