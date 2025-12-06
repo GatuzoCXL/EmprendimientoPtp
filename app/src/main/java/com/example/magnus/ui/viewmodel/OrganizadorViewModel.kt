@@ -29,6 +29,9 @@ class OrganizadorViewModel(application: Application) : AndroidViewModel(applicat
     private val _createSuccess = MutableStateFlow(false)
     val createSuccess: StateFlow<Boolean> = _createSuccess.asStateFlow()
 
+    private val _createdOrganizador = MutableStateFlow<Organizador?>(null)
+    val createdOrganizador: StateFlow<Organizador?> = _createdOrganizador.asStateFlow()
+
     private val _existingOrganizador = MutableStateFlow<Organizador?>(null)
     val existingOrganizador: StateFlow<Organizador?> = _existingOrganizador.asStateFlow()
 
@@ -71,7 +74,8 @@ class OrganizadorViewModel(application: Application) : AndroidViewModel(applicat
             _error.value = null
             _createSuccess.value = false
             repository.createOrganizador(data)
-                .onSuccess { 
+                .onSuccess { organizador ->
+                    _createdOrganizador.value = organizador
                     _createSuccess.value = true
                     loadOrganizadores()
                 }
@@ -86,5 +90,9 @@ class OrganizadorViewModel(application: Application) : AndroidViewModel(applicat
 
     fun clearCreateSuccess() {
         _createSuccess.value = false
+    }
+
+    fun clearCreatedOrganizador() {
+        _createdOrganizador.value = null
     }
 }

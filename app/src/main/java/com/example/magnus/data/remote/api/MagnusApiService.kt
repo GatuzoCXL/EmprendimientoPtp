@@ -107,4 +107,9 @@ interface MagnusApiService {
     suspend fun createOrganizador(
         @Body request: CreateOrganizadorRequest
     ): Response<ApiResponse<OrganizadorDto>>
+    
+    @GET("api/Organizadores/{id}/estadisticas")
+    suspend fun getOrganizadorStats(
+        @Path("id") id: String
+    ): Response<ApiResponse<OrganizadorStatsDto>>
 }

@@ -39,6 +39,7 @@ fun BecomeOrganizerScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val createSuccess by viewModel.createSuccess.collectAsState()
+    val createdOrganizador by viewModel.createdOrganizador.collectAsState()
     val existingOrganizador by viewModel.existingOrganizador.collectAsState()
 
     LaunchedEffect(userId) {
@@ -55,10 +56,16 @@ fun BecomeOrganizerScreen(
         }
     }
 
-    LaunchedEffect(createSuccess) {
-        if (createSuccess) {
-            navController.navigateUp()
+    LaunchedEffect(createSuccess, createdOrganizador) {
+        if (createSuccess && createdOrganizador != null) {
+            // Reload the user's organizador status in AuthViewModel
+            authViewModel.loadOrganizadorData(userId)
+            // Navigate to dashboard
+            navController.navigate("dashboard") {
+                popUpTo("dashboard") { inclusive = true }
+            }
             viewModel.clearCreateSuccess()
+            viewModel.clearCreatedOrganizador()
         }
     }
 
@@ -181,7 +188,6 @@ fun BecomeOrganizerScreen(
                     .height(150.dp),
                 maxLines = 6,
                 supportingText = { Text("${descripcion.length} / 50 caracteres mínimo") }
-            )   maxLines = 6
             )
 
             Spacer(modifier = Modifier.height(24.dp))

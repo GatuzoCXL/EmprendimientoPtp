@@ -257,3 +257,23 @@ data class CreateOrganizadorRequest(
     @SerializedName("usuarioId")
     val usuarioId: String
 )
+
+data class OrganizadorStatsDto(
+    @SerializedName("eventosOrganizados")
+    val eventosOrganizados: Int,
+    
+    @SerializedName("ingresosTotales")
+    val ingresosTotales: Double,
+    
+    @SerializedName("ratingPromedio")
+    val ratingPromedio: Double,
+    
+    @SerializedName("clientesSatisfechos")
+    val clientesSatisfechos: Int,
+    
+    @SerializedName("eventosPendientes")
+    val eventosPendientes: Int,
+    
+    @SerializedName("eventosProximos")
+    val eventosProximos: Int
+)

@@ -25,3 +25,12 @@ data class CreateOrganizadorData(
     val especialidad: String? = null,
     val usuarioId: String
 )
+
+data class OrganizadorStats(
+    val eventosOrganizados: Int,
+    val ingresosTotales: Double,
+    val ratingPromedio: Double,
+    val clientesSatisfechos: Int,
+    val eventosPendientes: Int,
+    val eventosProximos: Int
+)
